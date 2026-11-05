@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { C } from "@/lib/data"
+import { useState } from "react";
+import { C } from "@/lib/data";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PÁGINA: RESPONSABILIDAD EMPRESARIAL
@@ -58,14 +58,25 @@ function CorporateIcon({ name }) {
         <path d="M2 21c.5-4.5 2.5-7 6-7s5.5 2.5 6 7M14 15c4-.8 6.5 1.2 7 5" />
       </>
     ),
-  }
+  };
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <g
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         {paths[name]}
       </g>
     </svg>
-  )
+  );
 }
 function ResponsabilidadPage({ navigate }) {
   const emptyForm = {
@@ -76,11 +87,12 @@ function ResponsabilidadPage({ navigate }) {
     colaboradores: "",
     proyecto: "",
     descripcion: "",
-  }
-  const [form, setForm] = useState(emptyForm)
-  const [errors, setErrors] = useState({})
-  const [submitting, setSubmitting] = useState(false)
-  const [sent, setSent] = useState(false)
+  };
+  const [form, setForm] = useState(emptyForm);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [serverError, setServerError] = useState("");
   const initiatives = [
     {
       title: "Jornadas de limpieza",
@@ -106,9 +118,13 @@ function ResponsabilidadPage({ navigate }) {
       icon: "collaborate",
       img: "https://images.unsplash.com/photo-1697490251928-7e75b5147e5f?w=700&h=500&fit=crop&auto=format",
     },
-  ]
+  ];
   const steps = [
-    { title: "Nos contactamos", desc: "Abrimos una conversación para conocer la idea inicial.", icon: "contact" },
+    {
+      title: "Nos contactamos",
+      desc: "Abrimos una conversación para conocer la idea inicial.",
+      icon: "contact",
+    },
     {
       title: "Conocemos sus objetivos",
       desc: "Escuchamos las metas, necesidades y características del equipo.",
@@ -124,43 +140,66 @@ function ResponsabilidadPage({ navigate }) {
       desc: "Alineamos la logística y la participación de los colaboradores.",
       icon: "coordinate",
     },
-  ]
+  ];
   const validate = () => {
-    const next = {}
-    if (!form.contacto.trim()) next.contacto = "Indica el nombre de la persona de contacto."
-    if (!form.empresa.trim()) next.empresa = "Indica el nombre de la empresa."
+    const next = {};
+    if (!form.contacto.trim())
+      next.contacto = "Indica el nombre de la persona de contacto.";
+    if (!form.empresa.trim()) next.empresa = "Indica el nombre de la empresa.";
     if (!form.correo.trim()) {
-      next.correo = "El correo electrónico es obligatorio."
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) {
-      next.correo = "Ingresa un correo electrónico válido."
+      next.correo = "El correo electrónico es obligatorio.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
+      next.correo = "Ingresa un correo electrónico válido.";
     }
-    if (!form.telefono.trim()) next.telefono = "El teléfono es obligatorio."
+    if (!form.telefono.trim()) next.telefono = "El teléfono es obligatorio.";
     if (!form.colaboradores.trim()) {
-      next.colaboradores = "Indica una cantidad aproximada."
-    } else if (Number(form.colaboradores) < 1) {
-      next.colaboradores = "La cantidad debe ser mayor a cero."
+      next.colaboradores = "Indica una cantidad aproximada.";
+    } else if (
+      !Number.isInteger(Number(form.colaboradores)) ||
+      Number(form.colaboradores) < 1
+    ) {
+      next.colaboradores = "Ingresa un número entero mayor a cero.";
     }
-    if (!form.proyecto) next.proyecto = "Selecciona un tipo de proyecto."
-    if (!form.descripcion.trim()) next.descripcion = "Cuéntanos brevemente sobre la propuesta."
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    if (!validate()) return
-    setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
-      setSent(true)
-    }, 650)
-  }
+    if (!form.proyecto) next.proyecto = "Selecciona un tipo de proyecto.";
+    if (!form.descripcion.trim())
+      next.descripcion = "Cuéntanos brevemente sobre la propuesta.";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setServerError("");
+    if (!validate()) return;
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("/api/responsabilidad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "No fue posible enviar la solicitud.");
+      setSent(true);
+    } catch (error) {
+      setServerError(
+        error.message || "Ocurrió un error al enviar la solicitud.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
   const fieldStyle = (key) => ({
     border: `1px solid ${errors[key] ? C.earth : `${C.forest}30`}`,
     fontFamily: "Outfit, sans-serif",
     color: C.ink,
     background: C.surface,
-  })
-  const scrollToForm = () => document.getElementById("solicitud-empresarial")?.scrollIntoView({ behavior: "smooth" })
+  });
+  const scrollToForm = () =>
+    document
+      .getElementById("solicitud-empresarial")
+      ?.scrollIntoView({ behavior: "smooth" });
   return (
     <>
       <section className="relative min-h-[76vh] flex items-end overflow-hidden bg-[#0d2a1a]">
@@ -172,7 +211,8 @@ function ResponsabilidadPage({ navigate }) {
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(90deg, rgba(8,24,12,0.92) 0%, rgba(8,24,12,0.6) 54%, rgba(8,24,12,0.2) 100%)",
+            background:
+              "linear-gradient(90deg, rgba(8,24,12,0.92) 0%, rgba(8,24,12,0.6) 54%, rgba(8,24,12,0.2) 100%)",
           }}
         />
         <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-8 pb-16 md:pb-24 pt-28 w-full">
@@ -189,15 +229,22 @@ function ResponsabilidadPage({ navigate }) {
             Transformemos juntos nuestro compromiso ambiental en acción
           </h1>
           <p
-            style={{ color: "rgba(255,255,255,0.86)", fontFamily: "Outfit, sans-serif" }}
+            style={{
+              color: "rgba(255,255,255,0.86)",
+              fontFamily: "Outfit, sans-serif",
+            }}
             className="text-lg md:text-xl font-light leading-relaxed max-w-2xl mb-9"
           >
-            Conectamos empresas, colaboradores y comunidades mediante proyectos que promueven la participación y el
-            compromiso con el ambiente.
+            Conectamos empresas, colaboradores y comunidades mediante proyectos
+            que promueven la participación y el compromiso con el ambiente.
           </p>
           <button
             onClick={scrollToForm}
-            style={{ background: C.sky, color: C.white, fontFamily: "Outfit, sans-serif" }}
+            style={{
+              background: C.sky,
+              color: C.white,
+              fontFamily: "Outfit, sans-serif",
+            }}
             className="px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 active:scale-95 transition-all shadow-lg"
           >
             Conversemos sobre un proyecto
@@ -224,16 +271,21 @@ function ResponsabilidadPage({ navigate }) {
               style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
               className="text-base md:text-lg leading-relaxed font-light"
             >
-              Cada empresa tiene objetivos y equipos distintos. Por eso, el primer paso es conversar: Enviajarme puede
-              explorar junto a su organización oportunidades de participación ambiental y diseñar una actividad adecuada
-              a sus colaboradores, capacidades y contexto.
+              Cada empresa tiene objetivos y equipos distintos. Por eso, el
+              primer paso es conversar: Enviajarme puede explorar junto a su
+              organización oportunidades de participación ambiental y diseñar
+              una actividad adecuada a sus colaboradores, capacidades y
+              contexto.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {initiatives.map((item) => (
               <article
                 key={item.title}
-                style={{ background: C.surface, border: `1px solid ${C.forest}18` }}
+                style={{
+                  background: C.surface,
+                  border: `1px solid ${C.forest}18`,
+                }}
                 className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group"
               >
                 <div className="h-44 overflow-hidden">
@@ -251,13 +303,19 @@ function ResponsabilidadPage({ navigate }) {
                     <CorporateIcon name={item.icon} />
                   </span>
                   <h3
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-xl font-bold mb-3"
                   >
                     {item.title}
                   </h3>
                   <p
-                    style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      color: C.inkSoft,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="text-sm leading-relaxed font-light"
                   >
                     {item.desc}
@@ -301,20 +359,29 @@ function ResponsabilidadPage({ navigate }) {
                       <CorporateIcon name={step.icon} />
                     </span>
                     <span
-                      style={{ color: C.sky, fontFamily: "Fraunces, Georgia, serif" }}
+                      style={{
+                        color: C.sky,
+                        fontFamily: "Fraunces, Georgia, serif",
+                      }}
                       className="text-3xl font-black"
                     >
                       0{index + 1}
                     </span>
                   </div>
                   <h3
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-xl font-bold mb-2"
                   >
                     {step.title}
                   </h3>
                   <p
-                    style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      color: C.inkSoft,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="text-sm leading-relaxed font-light"
                   >
                     {step.desc}
@@ -335,11 +402,15 @@ function ResponsabilidadPage({ navigate }) {
             ¿Te gustaría desarrollar un proyecto con Enviajarme?
           </h2>
           <p
-            style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Outfit, sans-serif" }}
+            style={{
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "Outfit, sans-serif",
+            }}
             className="text-lg font-light leading-relaxed mb-8 max-w-2xl mx-auto"
           >
-            Comparte las ideas, necesidades y objetivos de tu empresa. Nuestro equipo podrá conocer el contexto y
-            explorar contigo una colaboración posible.
+            Comparte las ideas, necesidades y objetivos de tu empresa. Nuestro
+            equipo podrá conocer el contexto y explorar contigo una colaboración
+            posible.
           </p>
           <button
             onClick={scrollToForm}
@@ -351,7 +422,10 @@ function ResponsabilidadPage({ navigate }) {
         </div>
       </section>
 
-      <section id="solicitud-empresarial" className="py-20 md:py-28 scroll-mt-20">
+      <section
+        id="solicitud-empresarial"
+        className="py-20 md:py-28 scroll-mt-20"
+      >
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16 items-start">
             <div className="lg:col-span-2 lg:sticky lg:top-32">
@@ -371,21 +445,38 @@ function ResponsabilidadPage({ navigate }) {
                 style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
                 className="text-base leading-relaxed font-light mb-8"
               >
-                Esta solicitud es independiente de la inscripción pública a actividades. La información nos ayudará a
-                preparar una primera conversación enfocada en su empresa.
+                Esta solicitud es independiente de la inscripción pública a
+                actividades. La información nos ayudará a preparar una primera
+                conversación enfocada en su empresa.
               </p>
-              <div style={{ background: `${C.sky}10`, border: `1px solid ${C.sky}25` }} className="rounded-2xl p-5">
-                <p style={{ color: C.ink, fontFamily: "Outfit, sans-serif" }} className="text-sm font-semibold mb-1">
+              <div
+                style={{
+                  background: `${C.sky}10`,
+                  border: `1px solid ${C.sky}25`,
+                }}
+                className="rounded-2xl p-5"
+              >
+                <p
+                  style={{ color: C.ink, fontFamily: "Outfit, sans-serif" }}
+                  className="text-sm font-semibold mb-1"
+                >
                   Una conversación sin compromiso
                 </p>
-                <p style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-sm leading-relaxed">
-                  Revisaremos la solicitud y utilizaremos los datos únicamente para contactar a su organización.
+                <p
+                  style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+                  className="text-sm leading-relaxed"
+                >
+                  Revisaremos la solicitud y utilizaremos los datos únicamente
+                  para contactar a su organización.
                 </p>
               </div>
             </div>
 
             <div
-              style={{ background: C.surface, border: `1px solid ${C.forest}18` }}
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.forest}18`,
+              }}
               className="lg:col-span-3 rounded-2xl p-6 md:p-9 shadow-sm"
             >
               {sent ? (
@@ -394,7 +485,13 @@ function ResponsabilidadPage({ navigate }) {
                     style={{ background: `${C.forest}15`, color: C.forest }}
                     className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                   >
-                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <svg
+                      width="38"
+                      height="38"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
                       <path
                         d="m5 12 4 4L19 6"
                         stroke="currentColor"
@@ -405,24 +502,33 @@ function ResponsabilidadPage({ navigate }) {
                     </svg>
                   </span>
                   <h3
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-3xl font-bold mb-3"
                   >
                     Solicitud recibida
                   </h3>
                   <p
-                    style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      color: C.inkSoft,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="text-base leading-relaxed max-w-md mx-auto mb-8"
                   >
-                    Gracias, {form.contacto}. Recibimos la información de {form.empresa} y podremos contactarte en{" "}
-                    {form.correo}.
+                    Gracias, {form.contacto}. Recibimos la información de{" "}
+                    {form.empresa} y podremos contactarte en {form.correo}.
                   </p>
                   <button
                     onClick={() => {
-                      setForm(emptyForm)
-                      setSent(false)
+                      setForm(emptyForm);
+                      setSent(false);
                     }}
-                    style={{ border: `1px solid ${C.forest}40`, color: C.forest }}
+                    style={{
+                      border: `1px solid ${C.forest}40`,
+                      color: C.forest,
+                    }}
                     className="px-7 py-3 rounded-full text-sm font-semibold hover:bg-[#2d7a3a08] transition-colors"
                   >
                     Enviar otra solicitud
@@ -431,25 +537,53 @@ function ResponsabilidadPage({ navigate }) {
               ) : (
                 <>
                   <h3
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-2xl font-bold mb-2"
                   >
                     Solicitud de colaboración
                   </h3>
-                  <p style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-sm mb-8">
+                  <p
+                    style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+                    className="text-sm mb-8"
+                  >
                     Todos los campos son obligatorios.
                   </p>
-                  <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <form
+                    onSubmit={handleSubmit}
+                    noValidate
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-5"
+                  >
                     {[
-                      ["contacto", "Nombre de la persona de contacto", "text", "Ej. Ana Rodríguez"],
-                      ["empresa", "Nombre de la empresa", "text", "Ej. Empresa Verde S.A."],
-                      ["correo", "Correo electrónico", "email", "ana@empresa.com"],
+                      [
+                        "contacto",
+                        "Nombre de la persona de contacto",
+                        "text",
+                        "Ej. Ana Rodríguez",
+                      ],
+                      [
+                        "empresa",
+                        "Nombre de la empresa",
+                        "text",
+                        "Ej. Empresa Verde S.A.",
+                      ],
+                      [
+                        "correo",
+                        "Correo electrónico",
+                        "email",
+                        "ana@empresa.com",
+                      ],
                       ["telefono", "Teléfono", "tel", "Ej. 8888-8888"],
                     ].map(([key, label, type, placeholder]) => (
                       <div key={key}>
                         <label
                           htmlFor={`corporate-${key}`}
-                          style={{ color: C.ink, fontFamily: "Outfit, sans-serif" }}
+                          style={{
+                            color: C.ink,
+                            fontFamily: "Outfit, sans-serif",
+                          }}
                           className="block text-sm font-semibold mb-1.5"
                         >
                           {label} <span style={{ color: C.earth }}>*</span>
@@ -458,15 +592,26 @@ function ResponsabilidadPage({ navigate }) {
                           id={`corporate-${key}`}
                           type={type}
                           value={form[key]}
-                          onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              [key]: event.target.value,
+                            }))
+                          }
                           placeholder={placeholder}
                           aria-invalid={Boolean(errors[key])}
-                          aria-describedby={errors[key] ? `corporate-${key}-error` : undefined}
+                          aria-describedby={
+                            errors[key] ? `corporate-${key}-error` : undefined
+                          }
                           style={fieldStyle(key)}
                           className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#2d7a3a40]"
                         />
                         {errors[key] && (
-                          <p id={`corporate-${key}-error`} style={{ color: C.earth }} className="text-xs mt-1.5">
+                          <p
+                            id={`corporate-${key}-error`}
+                            style={{ color: C.earth }}
+                            className="text-xs mt-1.5"
+                          >
                             {errors[key]}
                           </p>
                         )}
@@ -478,21 +623,30 @@ function ResponsabilidadPage({ navigate }) {
                         style={{ color: C.ink }}
                         className="block text-sm font-semibold mb-1.5"
                       >
-                        Cantidad aproximada de colaboradores <span style={{ color: C.earth }}>*</span>
+                        Cantidad aproximada de colaboradores{" "}
+                        <span style={{ color: C.earth }}>*</span>
                       </label>
                       <input
                         id="corporate-colaboradores"
                         type="number"
                         min="1"
                         value={form.colaboradores}
-                        onChange={(event) => setForm((current) => ({ ...current, colaboradores: event.target.value }))}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            colaboradores: event.target.value,
+                          }))
+                        }
                         placeholder="Ej. 25"
                         aria-invalid={Boolean(errors.colaboradores)}
                         style={fieldStyle("colaboradores")}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#2d7a3a40]"
                       />
                       {errors.colaboradores && (
-                        <p style={{ color: C.earth }} className="text-xs mt-1.5">
+                        <p
+                          style={{ color: C.earth }}
+                          className="text-xs mt-1.5"
+                        >
                           {errors.colaboradores}
                         </p>
                       )}
@@ -503,12 +657,18 @@ function ResponsabilidadPage({ navigate }) {
                         style={{ color: C.ink }}
                         className="block text-sm font-semibold mb-1.5"
                       >
-                        Tipo de proyecto de interés <span style={{ color: C.earth }}>*</span>
+                        Tipo de proyecto de interés{" "}
+                        <span style={{ color: C.earth }}>*</span>
                       </label>
                       <select
                         id="corporate-proyecto"
                         value={form.proyecto}
-                        onChange={(event) => setForm((current) => ({ ...current, proyecto: event.target.value }))}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            proyecto: event.target.value,
+                          }))
+                        }
                         aria-invalid={Boolean(errors.proyecto)}
                         style={fieldStyle("proyecto")}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#2d7a3a40]"
@@ -521,7 +681,10 @@ function ResponsabilidadPage({ navigate }) {
                         <option>Otra idea</option>
                       </select>
                       {errors.proyecto && (
-                        <p style={{ color: C.earth }} className="text-xs mt-1.5">
+                        <p
+                          style={{ color: C.earth }}
+                          className="text-xs mt-1.5"
+                        >
                           {errors.proyecto}
                         </p>
                       )}
@@ -532,31 +695,60 @@ function ResponsabilidadPage({ navigate }) {
                         style={{ color: C.ink }}
                         className="block text-sm font-semibold mb-1.5"
                       >
-                        Descripción de la propuesta <span style={{ color: C.earth }}>*</span>
+                        Descripción de la propuesta{" "}
+                        <span style={{ color: C.earth }}>*</span>
                       </label>
                       <textarea
                         id="corporate-descripcion"
                         rows={5}
                         value={form.descripcion}
-                        onChange={(event) => setForm((current) => ({ ...current, descripcion: event.target.value }))}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            descripcion: event.target.value,
+                          }))
+                        }
                         placeholder="Cuéntanos sobre sus objetivos, ideas, fechas tentativas o necesidades particulares."
                         aria-invalid={Boolean(errors.descripcion)}
-                        style={{ ...fieldStyle("descripcion"), resize: "vertical" }}
+                        style={{
+                          ...fieldStyle("descripcion"),
+                          resize: "vertical",
+                        }}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#2d7a3a40]"
                       />
                       {errors.descripcion && (
-                        <p style={{ color: C.earth }} className="text-xs mt-1.5">
+                        <p
+                          style={{ color: C.earth }}
+                          className="text-xs mt-1.5"
+                        >
                           {errors.descripcion}
                         </p>
                       )}
                     </div>
+                    {serverError && (
+                      <p
+                        role="alert"
+                        style={{
+                          color: C.earth,
+                          fontFamily: "Outfit, sans-serif",
+                        }}
+                        className="sm:col-span-2 text-sm"
+                      >
+                        {serverError}
+                      </p>
+                    )}
                     <button
                       type="submit"
                       disabled={submitting}
-                      style={{ background: submitting ? C.muted : C.forest, color: C.white }}
+                      style={{
+                        background: submitting ? C.muted : C.forest,
+                        color: C.white,
+                      }}
                       className="sm:col-span-2 w-full py-4 rounded-full text-base font-semibold hover:opacity-90 transition-opacity shadow-sm disabled:cursor-not-allowed"
                     >
-                      {submitting ? "Enviando solicitud..." : "Enviar solicitud"}
+                      {submitting
+                        ? "Enviando solicitud..."
+                        : "Enviar solicitud"}
                     </button>
                   </form>
                 </>
@@ -582,7 +774,7 @@ function ResponsabilidadPage({ navigate }) {
         </div>
       </section>
     </>
-  )
+  );
 }
 
-export default ResponsabilidadPage
+export default ResponsabilidadPage;
