@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { C, ACTIVITIES } from "@/lib/data"
+import { useState } from "react";
+import { C, ACTIVITIES } from "@/lib/data";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PÁGINA: FORMULARIO DE INSCRIPCIÓN
 // ══════════════════════════════════════════════════════════════════════════════
 function InscripcionPage({ activityId, navigate }) {
-  const activity = ACTIVITIES.find((a) => a.id === activityId) ?? ACTIVITIES[0]
+  const activity = ACTIVITIES.find((a) => a.id === activityId) ?? ACTIVITIES[0];
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -15,32 +15,72 @@ function InscripcionPage({ activityId, navigate }) {
     edad: "",
     direccion: "",
     consentimiento: false,
-  })
-  const [errors, setErrors] = useState({})
-  const [submitting, setSubmitting] = useState(false)
+  });
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const validate = () => {
-    const e = {}
-    if (!form.nombre.trim()) e.nombre = "El nombre completo es obligatorio."
+    const e = {};
+    if (!form.nombre.trim()) e.nombre = "El nombre completo es obligatorio.";
     if (!form.correo.trim()) {
-      e.correo = "El correo electrónico es obligatorio."
+      e.correo = "El correo electrónico es obligatorio.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) {
-      e.correo = "Ingresa un correo válido."
+      e.correo = "Ingresa un correo válido.";
     }
-    if (!form.telefono.trim()) e.telefono = "El teléfono es obligatorio."
+    if (!form.telefono.trim()) e.telefono = "El teléfono es obligatorio.";
     if (!form.edad.trim()) {
-      e.edad = "La edad es obligatoria."
-    } else if (isNaN(Number(form.edad)) || Number(form.edad) < 12 || Number(form.edad) > 100) {
-      e.edad = "Ingresa una edad válida (12–100)."
+      e.edad = "La edad es obligatoria.";
+    } else if (
+      isNaN(Number(form.edad)) ||
+      Number(form.edad) < 12 ||
+      Number(form.edad) > 100
+    ) {
+      e.edad = "Ingresa una edad válida (12–100).";
     }
-    if (!form.direccion.trim()) e.direccion = "La dirección es obligatoria."
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!validate()) return
-    setSubmitting(true)
-    setTimeout(() => {
+    if (!form.direccion.trim()) e.direccion = "La dirección es obligatoria.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    setSubmitting(true);
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/inscripciones", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_actividad: activity.supabaseId,
+          nombre: form.nombre,
+          correo: form.correo,
+          telefono: form.telefono,
+          edad: Number(form.edad),
+          direccion: form.direccion,
+          consentimiento: form.consentimiento,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "No fue posible completar la inscripción.",
+        );
+      }
+
+      if (data.resultado === "ya_inscrito") {
+        setErrors({
+          general:
+            "Este correo ya tiene una inscripción confirmada para esta actividad.",
+        });
+        return;
+      }
+
       navigate("confirmacion", {
         confirmData: {
           name: form.nombre,
@@ -49,12 +89,22 @@ function InscripcionPage({ activityId, navigate }) {
           date: activity.date,
           location: activity.location,
         },
-      })
-    }, 700)
-  }
-  const InputField = ({ k, label, type = "text", placeholder = "" }) => (
+      });
+    } catch (error) {
+      setErrors({
+        general:
+          error.message || "Ocurrió un error al procesar tu inscripción.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const renderField = ({ k, label, type = "text", placeholder = "" }) => (
     <div>
-      <label style={{ color: C.ink, fontFamily: "Outfit, sans-serif" }} className="block text-sm font-semibold mb-1.5">
+      <label
+        style={{ color: C.ink, fontFamily: "Outfit, sans-serif" }}
+        className="block text-sm font-semibold mb-1.5"
+      >
         {label} <span style={{ color: C.earth }}>*</span>
       </label>
       <input
@@ -71,12 +121,15 @@ function InscripcionPage({ activityId, navigate }) {
         className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-[#2d7a3a40]"
       />
       {errors[k] && (
-        <p style={{ color: C.earth, fontFamily: "Outfit, sans-serif" }} className="text-xs mt-1.5">
+        <p
+          style={{ color: C.earth, fontFamily: "Outfit, sans-serif" }}
+          className="text-xs mt-1.5"
+        >
           {errors[k]}
         </p>
       )}
     </div>
-  )
+  );
   return (
     <section style={{ background: C.cream }} className="py-12 md:py-20">
       <div className="max-w-3xl mx-auto px-5 md:px-8">
@@ -90,7 +143,10 @@ function InscripcionPage({ activityId, navigate }) {
 
         {/* Resumen de actividad */}
         <div
-          style={{ background: `${C.forest}0d`, border: `1px solid ${C.forest}20` }}
+          style={{
+            background: `${C.forest}0d`,
+            border: `1px solid ${C.forest}20`,
+          }}
           className="rounded-2xl p-5 mb-8"
         >
           <p
@@ -99,47 +155,97 @@ function InscripcionPage({ activityId, navigate }) {
           >
             Inscripción a actividad
           </p>
-          <h2 style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }} className="text-xl font-bold mb-3">
+          <h2
+            style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+            className="text-xl font-bold mb-3"
+          >
             {activity.title}
           </h2>
           <div className="flex flex-wrap gap-4">
-            <span style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-sm">
+            <span
+              style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+              className="text-sm"
+            >
               📅 {activity.date}
             </span>
-            <span style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-sm">
+            <span
+              style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+              className="text-sm"
+            >
               📍 {activity.location}
             </span>
-            <span style={{ color: C.forest, fontFamily: "Outfit, sans-serif" }} className="text-sm font-medium">
+            <span
+              style={{ color: C.forest, fontFamily: "Outfit, sans-serif" }}
+              className="text-sm font-medium"
+            >
               {activity.spots} cupos disponibles
             </span>
           </div>
         </div>
 
         {/* Formulario */}
-        <div style={{ background: C.surface, border: `1px solid ${C.forest}15` }} className="rounded-2xl p-8 shadow-sm">
-          <h2 style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }} className="text-2xl font-bold mb-2">
+        <div
+          style={{ background: C.surface, border: `1px solid ${C.forest}15` }}
+          className="rounded-2xl p-8 shadow-sm"
+        >
+          <h2
+            style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+            className="text-2xl font-bold mb-2"
+          >
             Datos de inscripción
           </h2>
-          <p style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-sm mb-8">
-            Completa el formulario para reservar tu cupo. No es necesario crear una cuenta.
+          <p
+            style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+            className="text-sm mb-8"
+          >
+            Completa el formulario para reservar tu cupo. No es necesario crear
+            una cuenta.
           </p>
 
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-            <InputField k="nombre" label="Nombre completo" placeholder="Ej. María González Pérez" />
-            <InputField k="correo" label="Correo electrónico" type="email" placeholder="Ej. maria@correo.com" />
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="flex flex-col gap-5"
+          >
+            {renderField({
+              k: "nombre",
+              label: "Nombre completo",
+              placeholder: "Ej. María González Pérez",
+            })}
+            {renderField({
+              k: "correo",
+              label: "Correo electrónico",
+              type: "email",
+              placeholder: "Ej. maria@correo.com",
+            })}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <InputField k="telefono" label="Teléfono" type="tel" placeholder="Ej. 8888-8888" />
-              <InputField k="edad" label="Edad" type="number" placeholder="Ej. 28" />
+              {renderField({
+                k: "telefono",
+                label: "Teléfono",
+                type: "tel",
+                placeholder: "Ej. 8888-8888",
+              })}
+              {renderField({
+                k: "edad",
+                label: "Edad",
+                type: "number",
+                placeholder: "Ej. 28",
+              })}
             </div>
-            <InputField k="direccion" label="Dirección" placeholder="Provincia, cantón, distrito" />
-
+            {renderField({
+              k: "direccion",
+              label: "Dirección",
+              placeholder: "Provincia, cantón, distrito",
+            })}
             {/* Consentimiento */}
             <div className="flex items-start gap-3 mt-1">
               <input
                 type="checkbox"
                 id="consentimiento"
                 checked={form.consentimiento}
-                onChange={(e) => setForm((f) => ({ ...f, consentimiento: e.target.checked }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, consentimiento: e.target.checked }))
+                }
                 style={{ accentColor: C.forest }}
                 className="mt-1 w-4 h-4 shrink-0 cursor-pointer"
               />
@@ -148,7 +254,8 @@ function InscripcionPage({ activityId, navigate }) {
                 style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
                 className="text-sm leading-relaxed cursor-pointer"
               >
-                Acepto recibir información sobre futuras actividades y noticias de Enviajarme por correo electrónico.{" "}
+                Acepto recibir información sobre futuras actividades y noticias
+                de Enviajarme por correo electrónico.{" "}
                 <span style={{ color: C.muted }}>(Opcional)</span>
               </label>
             </div>
@@ -163,10 +270,24 @@ function InscripcionPage({ activityId, navigate }) {
               }}
               className="text-xs leading-relaxed px-4 py-3 rounded-xl"
             >
-              🔒 Tus datos serán utilizados únicamente para gestionar tu inscripción y comunicación relacionada con esta
-              actividad. No compartimos tu información con terceros.
+              🔒 Tus datos serán utilizados únicamente para gestionar tu
+              inscripción y comunicación relacionada con esta actividad. No
+              compartimos tu información con terceros.
             </div>
-
+            {errors.general && (
+              <div
+                style={{
+                  background: `${C.earth}12`,
+                  border: `1px solid ${C.earth}40`,
+                  color: C.earth,
+                  fontFamily: "Outfit, sans-serif",
+                }}
+                className="text-sm px-4 py-3 rounded-xl"
+                role="alert"
+              >
+                {errors.general}
+              </div>
+            )}
             {/* Acciones */}
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button
@@ -184,7 +305,11 @@ function InscripcionPage({ activityId, navigate }) {
               <button
                 type="button"
                 onClick={() => navigate("actividad", { activityId })}
-                style={{ border: `1px solid ${C.forest}40`, color: C.forest, fontFamily: "Outfit, sans-serif" }}
+                style={{
+                  border: `1px solid ${C.forest}40`,
+                  color: C.forest,
+                  fontFamily: "Outfit, sans-serif",
+                }}
                 className="sm:w-auto px-6 py-4 rounded-full text-base font-semibold hover:bg-[#2d7a3a08] transition-colors"
               >
                 Cancelar
@@ -194,7 +319,7 @@ function InscripcionPage({ activityId, navigate }) {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
-export default InscripcionPage
+export default InscripcionPage;

@@ -13,11 +13,12 @@ export const C = {
   inkSoft: "var(--text-secondary)",
   muted: "var(--text-muted)",
   footer: "#111713",
-}
+};
 // ── data ──────────────────────────────────────────────────────────────────────
 export const ACTIVITIES = [
   {
     id: 1,
+    supabaseId: "be0f606a-5e63-48f3-9884-5041866c3a4c",
     title: "Limpieza Sendero Volcán Poás",
     date: "12 Oct 2026",
     location: "Alajuela, Costa Rica",
@@ -35,8 +36,9 @@ export const ACTIVITIES = [
   },
   {
     id: 2,
+    supabaseId: "cf9183dd-8268-4b5d-bc57-82078890e4de",
     title: "Reforestación Bosque Nuboso",
-    date: "25 Oct 2026",
+    date: "15 Nov 2026",
     location: "Monteverde, Costa Rica",
     spots: 24,
     maxSpots: 40,
@@ -45,12 +47,15 @@ export const ACTIVITIES = [
       "Participaremos en la siembra de árboles nativos en zonas degradadas del bosque nuboso de Monteverde. Esta actividad contribuye directamente a la recuperación de hábitats para la biodiversidad local, incluyendo quetzales y otras especies amenazadas. Se incluye capacitación en técnicas de siembra y charla sobre especies nativas.",
     img: "https://images.unsplash.com/photo-1683065480640-6c3e20231a7a?w=1200&h=700&fit=crop&auto=format",
     gallery: [],
-    videos: [{ label: "Actividad de reforestación 2025", url: "https://youtube.com" }],
+    videos: [
+      { label: "Actividad de reforestación 2025", url: "https://youtube.com" },
+    ],
   },
   {
     id: 3,
+    supabaseId: "e5190d7c-a4bd-4f57-b5a2-9ed315d201ff",
     title: "Retiro de Residuos Playa Hermosa",
-    date: "8 Nov 2026",
+    date: "22 Nov 2026",
     location: "Puntarenas, Costa Rica",
     spots: 4,
     maxSpots: 30,
@@ -63,8 +68,9 @@ export const ACTIVITIES = [
   },
   {
     id: 4,
+    supabaseId: "c5e954cd-9d7e-4da2-912f-40b3c1ebd0ec",
     title: "Monitoreo de Ríos Zona Norte",
-    date: "20 Nov 2026",
+    date: "29 Nov 2026",
     location: "Sarapiquí, Costa Rica",
     spots: 15,
     maxSpots: 20,
@@ -77,6 +83,7 @@ export const ACTIVITIES = [
   },
   {
     id: 5,
+    supabaseId: "46011e01-e345-4111-a4e1-a31e3ae7c092",
     title: "Educación Ambiental Escuelas Rurales",
     date: "5 Dic 2026",
     location: "San Carlos, Costa Rica",
@@ -89,7 +96,7 @@ export const ACTIVITIES = [
     gallery: [],
     videos: [],
   },
-]
+];
 export const NEWS = [
   {
     id: 1,
@@ -181,11 +188,11 @@ export const NEWS = [
       "Desde Enviajarme, nuestras jornadas de limpieza de playas han contribuido a documentar y retirar toneladas de plástico de zonas costeras protegidas, datos que han servido de insumo para las políticas públicas.",
     ],
   },
-]
+];
 export const NAV_ITEMS = [
   { label: "Inicio", page: "inicio" },
   { label: "Nosotros", page: "nosotros" },
   { label: "Actividades", page: "actividades" },
   { label: "Noticias", page: "noticias" },
   { label: "Contacto", page: "contacto" },
-]
+];
