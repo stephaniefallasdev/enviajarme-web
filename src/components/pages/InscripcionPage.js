@@ -1,13 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { C, ACTIVITIES } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { C } from "@/lib/data";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PÁGINA: FORMULARIO DE INSCRIPCIÓN
 // ══════════════════════════════════════════════════════════════════════════════
 function InscripcionPage({ activityId, navigate }) {
-  const activity = ACTIVITIES.find((a) => a.id === activityId) ?? ACTIVITIES[0];
+  const [activity, setActivity] = useState(null);
+  const [loadStatus, setLoadStatus] = useState("loading"); // loading | ok | error
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadStatus("loading");
+
+    fetch(`/api/actividades/${activityId}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!cancelled) {
+          setActivity(data.actividad);
+          setLoadStatus("ok");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activityId]);
+
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -18,19 +42,20 @@ function InscripcionPage({ activityId, navigate }) {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
   const validate = () => {
     const e = {};
     if (!form.nombre.trim()) e.nombre = "El nombre completo es obligatorio.";
     if (!form.correo.trim()) {
       e.correo = "El correo electrónico es obligatorio.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
       e.correo = "Ingresa un correo válido.";
     }
     if (!form.telefono.trim()) e.telefono = "El teléfono es obligatorio.";
     if (!form.edad.trim()) {
       e.edad = "La edad es obligatoria.";
     } else if (
-      isNaN(Number(form.edad)) ||
+      !Number.isInteger(Number(form.edad)) ||
       Number(form.edad) < 12 ||
       Number(form.edad) > 100
     ) {
@@ -40,6 +65,7 @@ function InscripcionPage({ activityId, navigate }) {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -55,7 +81,7 @@ function InscripcionPage({ activityId, navigate }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id_actividad: activity.supabaseId,
+          id_actividad: activity.id,
           nombre: form.nombre,
           correo: form.correo,
           telefono: form.telefono,
@@ -99,6 +125,7 @@ function InscripcionPage({ activityId, navigate }) {
       setSubmitting(false);
     }
   };
+
   const renderField = ({ k, label, type = "text", placeholder = "" }) => (
     <div>
       <label
@@ -130,6 +157,49 @@ function InscripcionPage({ activityId, navigate }) {
       )}
     </div>
   );
+
+  // Pantallas de carga, error o actividad cerrada
+  const unavailable =
+    loadStatus === "ok" && (!activity.open || activity.spots === 0);
+
+  if (loadStatus !== "ok" || unavailable) {
+    return (
+      <section style={{ background: C.cream }} className="py-32">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <p
+            style={{
+              color: loadStatus === "loading" ? C.muted : C.earth,
+              fontFamily: "Outfit, sans-serif",
+            }}
+            className="text-lg mb-6"
+            role={loadStatus === "loading" ? "status" : "alert"}
+          >
+            {loadStatus === "loading" && "Cargando actividad..."}
+            {loadStatus === "error" &&
+              "No fue posible cargar la actividad. Inténtalo de nuevo más tarde."}
+            {unavailable &&
+              (!activity.open
+                ? "Esta actividad ya no recibe inscripciones."
+                : "Esta actividad ya no tiene cupos disponibles.")}
+          </p>
+          {loadStatus !== "loading" && (
+            <button
+              onClick={() => navigate("actividades")}
+              style={{
+                border: `1px solid ${C.forest}40`,
+                color: C.forest,
+                fontFamily: "Outfit, sans-serif",
+              }}
+              className="px-7 py-3 rounded-full text-sm font-semibold"
+            >
+              Ver actividades
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section style={{ background: C.cream }} className="py-12 md:py-20">
       <div className="max-w-3xl mx-auto px-5 md:px-8">
@@ -237,6 +307,7 @@ function InscripcionPage({ activityId, navigate }) {
               label: "Dirección",
               placeholder: "Provincia, cantón, distrito",
             })}
+
             {/* Consentimiento */}
             <div className="flex items-start gap-3 mt-1">
               <input
@@ -274,6 +345,7 @@ function InscripcionPage({ activityId, navigate }) {
               inscripción y comunicación relacionada con esta actividad. No
               compartimos tu información con terceros.
             </div>
+
             {errors.general && (
               <div
                 style={{
@@ -288,6 +360,7 @@ function InscripcionPage({ activityId, navigate }) {
                 {errors.general}
               </div>
             )}
+
             {/* Acciones */}
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button

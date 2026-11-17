@@ -1,16 +1,39 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { C, ACTIVITIES } from "@/lib/data"
-import { ActivityCard, PageHero } from "@/components/Shared"
+import { useEffect, useState } from "react";
+import { C } from "@/lib/data";
+import { ActivityCard, PageHero } from "@/components/Shared";
 
-// ══════════════════════════════════════════════════════════════════════════════
-// PÁGINA: ACTIVIDADES
-// ══════════════════════════════════════════════════════════════════════════════
-const ACT_CATEGORIES = ["Todos", "Sendero", "Bosque", "Playa", "Río", "Educación"]
 function ActividadesPage({ navigate }) {
-  const [activeCategory, setActiveCategory] = useState("Todos")
-  const filtered = ACTIVITIES.filter((a) => (activeCategory === "Todos" ? true : a.category === activeCategory))
+  const [activities, setActivities] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("Todos");
+  const [status, setStatus] = useState("loading"); // loading | ok | error
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/actividades", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!cancelled) {
+          setActivities(data.actividades);
+          setCategories(data.categorias);
+          setStatus("ok");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = activities.filter((a) =>
+    activeCategory === "Todos" ? true : a.category === activeCategory,
+  );
+
   return (
     <>
       <PageHero
@@ -36,46 +59,79 @@ function ActividadesPage({ navigate }) {
             style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
             className="text-base mb-10 font-light max-w-xl"
           >
-            Todas las actividades mostradas están abiertas para inscripción. Actúa rápido cuando veas pocos cupos
-            disponibles.
+            Todas las actividades mostradas están abiertas para inscripción.
+            Actúa rápido cuando veas pocos cupos disponibles.
           </p>
 
-          {/* Filtros */}
-          <div className="flex flex-wrap gap-2 mb-10">
-            {ACT_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                style={{
-                  background: activeCategory === cat ? C.forest : C.surface,
-                  color: activeCategory === cat ? C.white : C.inkSoft,
-                  border: `1px solid ${activeCategory === cat ? C.forest : `${C.forest}30`}`,
-                  fontFamily: "Outfit, sans-serif",
-                }}
-                className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          {status === "loading" && (
+            <p
+              style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+              className="py-20 text-center"
+              role="status"
+            >
+              Cargando actividades...
+            </p>
+          )}
 
-          {filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <p style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }} className="text-lg">
-                No hay actividades disponibles en esta categoría por el momento.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filtered.map((a) => (
-                <ActivityCard key={a.id} activity={a} navigate={navigate} variant="list" />
-              ))}
-            </div>
+          {status === "error" && (
+            <p
+              style={{ color: C.earth, fontFamily: "Outfit, sans-serif" }}
+              className="py-20 text-center"
+              role="alert"
+            >
+              No fue posible cargar las actividades. Inténtalo de nuevo más
+              tarde.
+            </p>
+          )}
+
+          {status === "ok" && (
+            <>
+              <div className="flex flex-wrap gap-2 mb-10">
+                {["Todos", ...categories].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    style={{
+                      background: activeCategory === cat ? C.forest : C.surface,
+                      color: activeCategory === cat ? C.white : C.inkSoft,
+                      border: `1px solid ${activeCategory === cat ? C.forest : `${C.forest}30`}`,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
+                    className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className="text-center py-20">
+                  <p
+                    style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+                    className="text-lg"
+                  >
+                    No hay actividades disponibles en esta categoría por el
+                    momento.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {filtered.map((a) => (
+                    <ActivityCard
+                      key={a.id}
+                      activity={a}
+                      navigate={navigate}
+                      variant="list"
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
     </>
-  )
+  );
 }
 
-export default ActividadesPage
+export default ActividadesPage;

@@ -1,35 +1,118 @@
-"use client"
+"use client";
 
-import { C, ACTIVITIES } from "@/lib/data"
+import { useEffect, useState } from "react";
+import { C } from "@/lib/data";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PÁGINA: DETALLE DE ACTIVIDAD
 // ══════════════════════════════════════════════════════════════════════════════
 function ActividadDetallePage({ activityId, navigate }) {
-  const activity = ACTIVITIES.find((a) => a.id === activityId) ?? ACTIVITIES[0]
-  const isFull = activity.spots === 0
-  const isLow = activity.spots > 0 && activity.spots <= 5
-  const pct = Math.round(((activity.maxSpots - activity.spots) / activity.maxSpots) * 100)
+  const [activity, setActivity] = useState(null);
+  const [status, setStatus] = useState("loading"); // loading | ok | notfound | error
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+
+    fetch(`/api/actividades/${activityId}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (res.status === 400 || res.status === 404) {
+          if (!cancelled) setStatus("notfound");
+          return;
+        }
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!cancelled) {
+          setActivity(data.actividad);
+          setStatus("ok");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activityId]);
+
+  if (status !== "ok") {
+    return (
+      <section style={{ background: C.cream }} className="py-32">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <p
+            style={{
+              color: status === "loading" ? C.muted : C.earth,
+              fontFamily: "Outfit, sans-serif",
+            }}
+            className="text-lg mb-6"
+            role={status === "loading" ? "status" : "alert"}
+          >
+            {status === "loading" && "Cargando actividad..."}
+            {status === "notfound" &&
+              "La actividad no existe o ya no está disponible."}
+            {status === "error" &&
+              "No fue posible cargar la actividad. Inténtalo de nuevo más tarde."}
+          </p>
+          {status !== "loading" && (
+            <button
+              onClick={() => navigate("actividades")}
+              style={{
+                border: `1px solid ${C.forest}40`,
+                color: C.forest,
+                fontFamily: "Outfit, sans-serif",
+              }}
+              className="px-7 py-3 rounded-full text-sm font-semibold"
+            >
+              Ver actividades
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  const isFull = activity.spots === 0;
+  const isLow = activity.spots > 0 && activity.spots <= 5;
+  const pct = Math.round(
+    ((activity.maxSpots - activity.spots) / activity.maxSpots) * 100,
+  );
+
   return (
     <>
       {/* Hero imagen */}
       <div className="relative h-[50vh] md:h-[58vh] overflow-hidden bg-[#0d2a1a]">
-        <img src={activity.img} alt={activity.title} className="w-full h-full object-cover" style={{ opacity: 0.82 }} />
+        <img
+          src={activity.img}
+          alt={activity.title}
+          className="w-full h-full object-cover"
+          style={{ opacity: 0.82 }}
+        />
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, rgba(8,24,12,0.88) 0%, transparent 55%)" }}
+          style={{
+            background:
+              "linear-gradient(to top, rgba(8,24,12,0.88) 0%, transparent 55%)",
+          }}
         />
         <div className="absolute bottom-8 left-0 right-0">
           <div className="max-w-7xl mx-auto px-5 md:px-8">
             <button
               onClick={() => navigate("actividades")}
-              style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Outfit, sans-serif" }}
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                fontFamily: "Outfit, sans-serif",
+              }}
               className="text-sm mb-3 block hover:text-white transition-colors"
             >
               ← Volver a actividades
             </button>
             <span
-              style={{ background: `${C.sky}cc`, color: C.white, fontFamily: "Outfit, sans-serif" }}
+              style={{
+                background: `${C.sky}cc`,
+                color: C.white,
+                fontFamily: "Outfit, sans-serif",
+              }}
               className="text-xs font-semibold px-3 py-1 rounded-full mb-3 inline-block"
             >
               {activity.category}
@@ -51,20 +134,31 @@ function ActividadDetallePage({ activityId, navigate }) {
             <div className="md:col-span-2">
               <div className="flex flex-wrap gap-3 mb-8">
                 <span
-                  style={{ background: `${C.forest}18`, color: C.forest, fontFamily: "Outfit, sans-serif" }}
+                  style={{
+                    background: `${C.forest}18`,
+                    color: C.forest,
+                    fontFamily: "Outfit, sans-serif",
+                  }}
                   className="text-sm font-semibold px-3 py-1.5 rounded-full"
                 >
                   📅 {activity.date}
                 </span>
                 <span
-                  style={{ background: `${C.forest}18`, color: C.forest, fontFamily: "Outfit, sans-serif" }}
+                  style={{
+                    background: `${C.forest}18`,
+                    color: C.forest,
+                    fontFamily: "Outfit, sans-serif",
+                  }}
                   className="text-sm font-semibold px-3 py-1.5 rounded-full"
                 >
                   📍 {activity.location}
                 </span>
               </div>
 
-              <h2 style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }} className="text-2xl font-bold mb-4">
+              <h2
+                style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                className="text-2xl font-bold mb-4"
+              >
                 Descripción
               </h2>
               <p
@@ -77,14 +171,22 @@ function ActividadDetallePage({ activityId, navigate }) {
               {activity.gallery.length > 0 && (
                 <div className="mb-10">
                   <h2
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-2xl font-bold mb-6"
                   >
                     Fotografías
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
                     {activity.gallery.map((src, i) => (
-                      <img key={i} src={src} alt="" className="rounded-2xl object-cover w-full h-48 shadow-sm" />
+                      <img
+                        key={i}
+                        src={src}
+                        alt=""
+                        className="rounded-2xl object-cover w-full h-48 shadow-sm"
+                      />
                     ))}
                   </div>
                 </div>
@@ -93,7 +195,10 @@ function ActividadDetallePage({ activityId, navigate }) {
               {activity.videos.length > 0 && (
                 <div>
                   <h2
-                    style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }}
+                    style={{
+                      fontFamily: "Fraunces, Georgia, serif",
+                      color: C.ink,
+                    }}
                     className="text-2xl font-bold mb-6"
                   >
                     Videos relacionados
@@ -125,52 +230,101 @@ function ActividadDetallePage({ activityId, navigate }) {
             {/* Sidebar */}
             <div>
               <div
-                style={{ background: C.surface, border: `1px solid ${C.forest}18` }}
+                style={{
+                  background: C.surface,
+                  border: `1px solid ${C.forest}18`,
+                }}
                 className="rounded-2xl p-6 shadow-sm sticky top-28"
               >
-                <h3 style={{ fontFamily: "Fraunces, Georgia, serif", color: C.ink }} className="text-xl font-bold mb-6">
+                <h3
+                  style={{
+                    fontFamily: "Fraunces, Georgia, serif",
+                    color: C.ink,
+                  }}
+                  className="text-xl font-bold mb-6"
+                >
                   Cupos disponibles
                 </h3>
 
                 <div className="mb-2 flex justify-between items-center">
-                  <span style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }} className="text-sm">
+                  <span
+                    style={{
+                      color: C.inkSoft,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
+                    className="text-sm"
+                  >
                     Inscritos / Total
                   </span>
                   <span
-                    style={{ color: isFull ? C.earth : isLow ? C.earth : C.forest, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      color: isFull ? C.earth : isLow ? C.earth : C.forest,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="text-sm font-bold"
                   >
                     {activity.maxSpots - activity.spots} / {activity.maxSpots}
                   </span>
                 </div>
 
-                <div className="w-full rounded-full h-2 mb-6" style={{ background: `${C.forest}18` }}>
+                <div
+                  className="w-full rounded-full h-2 mb-6"
+                  style={{ background: `${C.forest}18` }}
+                >
                   <div
-                    style={{ width: `${pct}%`, background: pct > 80 ? C.earth : C.forest }}
+                    style={{
+                      width: `${pct}%`,
+                      background: pct > 80 ? C.earth : C.forest,
+                    }}
                     className="h-2 rounded-full transition-all"
                   />
                 </div>
 
-                {isLow && !isFull && (
+                {isLow && !isFull && activity.open && (
                   <div
-                    style={{ background: `${C.earth}15`, color: C.earth, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      background: `${C.earth}15`,
+                      color: C.earth,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="rounded-xl px-4 py-3 text-sm font-medium mb-6"
                   >
                     ⚠️ ¡Solo quedan {activity.spots} cupos!
                   </div>
                 )}
 
-                {isFull ? (
+                {!activity.open ? (
                   <div
-                    style={{ background: `${C.earth}15`, color: C.earth, fontFamily: "Outfit, sans-serif" }}
+                    style={{
+                      background: `${C.earth}15`,
+                      color: C.earth,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
+                    className="rounded-xl px-4 py-4 text-sm font-medium text-center mb-4"
+                  >
+                    Esta actividad ya no recibe inscripciones.
+                  </div>
+                ) : isFull ? (
+                  <div
+                    style={{
+                      background: `${C.earth}15`,
+                      color: C.earth,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="rounded-xl px-4 py-4 text-sm font-medium text-center mb-4"
                   >
                     Esta actividad ya no tiene cupos disponibles.
                   </div>
                 ) : (
                   <button
-                    onClick={() => navigate("inscripcion", { activityId: activity.id })}
-                    style={{ background: C.forest, color: C.white, fontFamily: "Outfit, sans-serif" }}
+                    onClick={() =>
+                      navigate("inscripcion", { activityId: activity.id })
+                    }
+                    style={{
+                      background: C.forest,
+                      color: C.white,
+                      fontFamily: "Outfit, sans-serif",
+                    }}
                     className="w-full py-4 rounded-full text-base font-semibold hover:opacity-90 transition-opacity shadow-sm mb-3"
                   >
                     Inscribirme a esta actividad
@@ -179,7 +333,11 @@ function ActividadDetallePage({ activityId, navigate }) {
 
                 <button
                   onClick={() => navigate("actividades")}
-                  style={{ border: `1px solid ${C.forest}40`, color: C.forest, fontFamily: "Outfit, sans-serif" }}
+                  style={{
+                    border: `1px solid ${C.forest}40`,
+                    color: C.forest,
+                    fontFamily: "Outfit, sans-serif",
+                  }}
                   className="w-full py-3 rounded-full text-sm font-semibold hover:bg-[#2d7a3a08] transition-colors"
                 >
                   Ver otras actividades
@@ -190,7 +348,7 @@ function ActividadDetallePage({ activityId, navigate }) {
         </div>
       </section>
     </>
-  )
+  );
 }
 
-export default ActividadDetallePage
+export default ActividadDetallePage;
