@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import { C, ACTIVITIES, NEWS } from "@/lib/data"
-import { ActivityCard, NewsCard } from "@/components/Shared"
+import { useEffect, useState } from "react";
+import { C, NEWS } from "@/lib/data";
+import { ActivityCard, NewsCard } from "@/components/Shared";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PÁGINA: INICIO
@@ -15,7 +16,10 @@ function Hero({ navigate }) {
         className="absolute inset-0 w-full h-full object-cover object-center"
         style={{ opacity: 0.85 }}
       />
-      <div className="absolute inset-0" style={{ background: "rgba(8,24,12,0.45)" }} />
+      <div
+        className="absolute inset-0"
+        style={{ background: "rgba(8,24,12,0.45)" }}
+      />
       <div className="absolute inset-0">
         <video
           autoPlay
@@ -26,7 +30,10 @@ function Hero({ navigate }) {
           className="absolute inset-0 w-full h-full object-cover"
           aria-label="Vista aérea de una costa natural"
         >
-          <source src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_30fps.mp4" type="video/mp4" />
+          <source
+            src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_30fps.mp4"
+            type="video/mp4"
+          />
         </video>
         <div
           className="absolute inset-0"
@@ -38,7 +45,11 @@ function Hero({ navigate }) {
       </div>
       <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-8 pb-20 md:pb-28 pt-24">
         <p
-          style={{ color: C.sky, fontFamily: "Outfit, sans-serif", textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}
+          style={{
+            color: C.sky,
+            fontFamily: "Outfit, sans-serif",
+            textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+          }}
           className="text-sm font-semibold uppercase tracking-widest mb-4"
         >
           Costa Rica · Voluntariado Ambiental
@@ -67,25 +78,30 @@ function Hero({ navigate }) {
           }}
           className="text-lg md:text-xl font-light leading-relaxed max-w-xl mb-10"
         >
-          Únete a nuestras actividades de voluntariado ambiental y sé parte del cambio que Costa Rica necesita.
+          Únete a nuestras actividades de voluntariado ambiental y sé parte del
+          cambio que Costa Rica necesita.
         </p>
         <button
           onClick={() => navigate("actividades")}
-          style={{ background: C.sky, color: C.white, fontFamily: "Outfit, sans-serif" }}
+          style={{
+            background: C.sky,
+            color: C.white,
+            fontFamily: "Outfit, sans-serif",
+          }}
           className="inline-block px-8 py-4 rounded-full text-base font-semibold hover:opacity-90 active:scale-95 transition-all shadow-lg"
         >
           Ver actividades →
         </button>
       </div>
     </section>
-  )
+  );
 }
 function Impact() {
   const stats = [
     { value: "25", label: "actividades realizadas" },
     { value: "350", label: "voluntarios activos" },
     { value: "1,250 kg", label: "de residuos retirados" },
-  ]
+  ];
   return (
     <section style={{ background: C.forest }} className="py-16 md:py-20">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
@@ -103,7 +119,10 @@ function Impact() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0 md:divide-x md:divide-white/20">
           {stats.map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center text-center px-8 py-4">
+            <div
+              key={label}
+              className="flex flex-col items-center text-center px-8 py-4"
+            >
               <span
                 style={{ color: C.sky, fontFamily: "Fraunces, Georgia, serif" }}
                 className="text-5xl md:text-6xl font-black mb-3 leading-none"
@@ -111,7 +130,10 @@ function Impact() {
                 {value}
               </span>
               <span
-                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Outfit, sans-serif" }}
+                style={{
+                  color: "rgba(255,255,255,0.75)",
+                  fontFamily: "Outfit, sans-serif",
+                }}
                 className="text-base font-light tracking-wide"
               >
                 {label}
@@ -121,9 +143,31 @@ function Impact() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 function HomeActivities({ navigate }) {
+  const [activities, setActivities] = useState([]);
+  const [status, setStatus] = useState("loading"); // loading | ok | error
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/actividades", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!cancelled) {
+          setActivities(data.actividades.slice(0, 3));
+          setStatus("ok");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section style={{ background: C.cream }} className="py-20 md:py-28">
       <div className="max-w-7xl mx-auto px-5 md:px-8">
@@ -148,15 +192,57 @@ function HomeActivities({ navigate }) {
             Ver todas →
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {ACTIVITIES.slice(0, 3).map((a) => (
-            <ActivityCard key={a.id} activity={a} navigate={navigate} variant="home" />
-          ))}
-        </div>
+
+        {status === "loading" && (
+          <p
+            style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+            className="py-12 text-center"
+            role="status"
+          >
+            Cargando actividades...
+          </p>
+        )}
+
+        {status === "error" && (
+          <p
+            style={{ color: C.earth, fontFamily: "Outfit, sans-serif" }}
+            className="py-12 text-center"
+            role="alert"
+          >
+            No fue posible cargar las actividades por el momento.
+          </p>
+        )}
+
+        {status === "ok" && activities.length === 0 && (
+          <p
+            style={{ color: C.muted, fontFamily: "Outfit, sans-serif" }}
+            className="py-12 text-center"
+          >
+            Pronto publicaremos nuevas actividades. ¡Vuelve a visitarnos!
+          </p>
+        )}
+
+        {status === "ok" && activities.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {activities.map((a) => (
+              <ActivityCard
+                key={a.id}
+                activity={a}
+                navigate={navigate}
+                variant="home"
+              />
+            ))}
+          </div>
+        )}
+
         <div className="text-center">
           <button
             onClick={() => navigate("actividades")}
-            style={{ border: `2px solid ${C.forest}`, color: C.forest, fontFamily: "Outfit, sans-serif" }}
+            style={{
+              border: `2px solid ${C.forest}`,
+              color: C.forest,
+              fontFamily: "Outfit, sans-serif",
+            }}
             className="inline-block px-8 py-3.5 rounded-full text-base font-semibold hover:bg-[#2d7a3a0d] transition-colors"
           >
             Ver todas las actividades
@@ -164,7 +250,7 @@ function HomeActivities({ navigate }) {
         </div>
       </div>
     </section>
-  )
+  );
 }
 function HomeAbout({ navigate }) {
   return (
@@ -190,20 +276,26 @@ function HomeAbout({ navigate }) {
               style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
               className="text-base md:text-lg leading-relaxed mb-6 font-light"
             >
-              Enviajarme nació de la convicción de que viajar puede ser un acto de cuidado. Organizamos actividades de
-              voluntariado ambiental que unen a personas de todo el país en la protección de nuestros ecosistemas y
-              senderos naturales.
+              Enviajarme nació de la convicción de que viajar puede ser un acto
+              de cuidado. Organizamos actividades de voluntariado ambiental que
+              unen a personas de todo el país en la protección de nuestros
+              ecosistemas y senderos naturales.
             </p>
             <p
               style={{ color: C.inkSoft, fontFamily: "Outfit, sans-serif" }}
               className="text-base leading-relaxed mb-8 font-light"
             >
-              Desde el 2021, hemos reunido a cientos de voluntarios en ríos, playas, bosques y montañas, construyendo
-              comunidad y dejando un rastro limpio a nuestro paso.
+              Desde el 2021, hemos reunido a cientos de voluntarios en ríos,
+              playas, bosques y montañas, construyendo comunidad y dejando un
+              rastro limpio a nuestro paso.
             </p>
             <button
               onClick={() => navigate("nosotros")}
-              style={{ background: C.earth, color: C.white, fontFamily: "Outfit, sans-serif" }}
+              style={{
+                background: C.earth,
+                color: C.white,
+                fontFamily: "Outfit, sans-serif",
+              }}
               className="inline-block px-7 py-3.5 rounded-full text-base font-semibold hover:opacity-90 transition-opacity shadow-sm"
             >
               Conócenos →
@@ -225,14 +317,18 @@ function HomeAbout({ navigate }) {
               style={{ background: C.sky, fontFamily: "Outfit, sans-serif" }}
               className="absolute bottom-12 right-4 rounded-2xl px-5 py-3 shadow-lg"
             >
-              <p className="text-white text-2xl font-black leading-none">+5 años</p>
-              <p className="text-white/80 text-xs font-medium mt-0.5">de impacto ambiental</p>
+              <p className="text-white text-2xl font-black leading-none">
+                +5 años
+              </p>
+              <p className="text-white/80 text-xs font-medium mt-0.5">
+                de impacto ambiental
+              </p>
             </div>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }
 function HomeNews({ navigate }) {
   return (
@@ -266,7 +362,7 @@ function HomeNews({ navigate }) {
         </div>
       </div>
     </section>
-  )
+  );
 }
 function HomeCorporate({ navigate }) {
   return (
@@ -299,15 +395,22 @@ function HomeCorporate({ navigate }) {
               El compromiso compartido puede transformar territorios.
             </h2>
             <p
-              style={{ color: "rgba(255,255,255,0.82)", fontFamily: "Outfit, sans-serif" }}
+              style={{
+                color: "rgba(255,255,255,0.82)",
+                fontFamily: "Outfit, sans-serif",
+              }}
               className="text-base md:text-lg font-light leading-relaxed mb-8"
             >
-              Diseñemos una experiencia ambiental que conecte a tu equipo con las comunidades y la naturaleza de Costa
-              Rica.
+              Diseñemos una experiencia ambiental que conecte a tu equipo con
+              las comunidades y la naturaleza de Costa Rica.
             </p>
             <button
               onClick={() => navigate("responsabilidad")}
-              style={{ background: C.sky, color: C.white, fontFamily: "Outfit, sans-serif" }}
+              style={{
+                background: C.sky,
+                color: C.white,
+                fontFamily: "Outfit, sans-serif",
+              }}
               className="px-7 py-3.5 rounded-full text-base font-semibold hover:opacity-90 transition-opacity shadow-md"
             >
               Conocer la propuesta →
@@ -316,7 +419,7 @@ function HomeCorporate({ navigate }) {
         </div>
       </div>
     </section>
-  )
+  );
 }
 function HomePage({ navigate }) {
   return (
@@ -328,7 +431,7 @@ function HomePage({ navigate }) {
       <HomeCorporate navigate={navigate} />
       <HomeNews navigate={navigate} />
     </>
-  )
+  );
 }
 
-export default HomePage
+export default HomePage;
